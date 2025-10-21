@@ -18,8 +18,10 @@ The data used in this study is multi-sourced and structured as follows:
 ### 3. Pre-trained Models
 - **Location**: `models/` directory.
 - **Contents**:
-  - `trees_faster_rcnn.pth` / `trees_yolov5.pt`: The final model weights for tree detection.
-  - `training_logs/`: Logs and graphs from the model training process.
-
-### 4. Processed Data (For Direct Inference)
-- We provide a small set of example Street View images in the `samples/` directory for quick testing.
+  ​​Per-City Models​​: Fine-tuned model weights for each target city, stored in their respective directories (e.g., NewYork-yolov11/, Seoul-yolov11/, Zhuhai-yolov11/).
+​​  Base Models​​: Foundational pre-trained weights for YOLO architectures (yolov8n.pt, yolo11n.pt).
+### 4. Sample Testing Scripts
+- Purpose​​: Ready-to-use scripts for quick verification of the data processing pipeline and model inference.
+  ​​Scripts​​:
+  train-tree.py: Script for initiating model training.
+  test-tree-crop.py: Script for performing inference and cropping detected tree instances from images.
