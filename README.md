@@ -22,6 +22,6 @@ The data used in this study is multi-sourced and structured as follows:
 ​​  Base Models​​: Foundational pre-trained weights for YOLO architectures (yolov8n.pt, yolo11n.pt).
 ### 4. Sample Testing Scripts
 - Purpose​​: Ready-to-use scripts for quick verification of the data processing pipeline and model inference.
-  ​​Scripts​​:
-  train-tree.py: Script for initiating model training.
-  test-tree-crop.py: Script for performing inference and cropping detected tree instances from images.
+- ​​Scripts​​:
+  -train-tree.py: Script for initiating model training.
+  -test-tree-crop.py: Script for performing inference and cropping detected tree instances from images.
