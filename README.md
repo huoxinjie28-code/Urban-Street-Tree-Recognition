@@ -14,8 +14,7 @@ The data used in this study is multi-sourced and structured as follows:
   - **Seongdong-gu, Seoul, South Korea**: High-density East Asian urban environment.
 - **Purpose**: The primary data source for visual tree detection.
 ### 2. Annotations
-- **Annotation Files**: The `annotations/` directory contains VOC-format or COCO-format files (`*.xml` or `*.json`) with bounding box labels for trees in the Street View images.
-
+- **Annotation Files**: The annotations/ directory contains YOLOv11-compatible annotation files (*.txt) with bounding box labels for trees in normalized coordinates format.
 ### 3. Pre-trained Models
 - **Location**: `models/` directory.
 - **Contents**:
