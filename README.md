@@ -13,9 +13,7 @@ The data used in this study is multi-sourced and structured as follows:
   - **Xiangzhou, Zhuhai, China**: Subtropical coastal city with rich vegetation.
   - **Seongdong-gu, Seoul, South Korea**: High-density East Asian urban environment.
 - **Purpose**: The primary data source for visual tree detection.
-### 2. GIS Data & Annotations
-- **Tree Inventory**: Vector data (e.g., Shapefile `.shp`) containing the location and species information of individual trees (if available).
-- **Road Network**: Vector data used to generate sampling points for Street View image acquisition.
+### 2. Annotations
 - **Annotation Files**: The `annotations/` directory contains VOC-format or COCO-format files (`*.xml` or `*.json`) with bounding box labels for trees in the Street View images.
 
 ### 3. Pre-trained Models
