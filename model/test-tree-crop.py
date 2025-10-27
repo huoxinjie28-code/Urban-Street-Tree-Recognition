@@ -5,7 +5,7 @@ import json
 model = YOLO("D:/ultralytics-main/runs/detect/train12/weights/best.pt")
 input_folder = "D:/streeview_four_r3"
 output_folder = "D:/03_11_whx/csv_r3"
-# 裁剪图片文件夹路径
+
 cropped_folder = "D:/03_11_whx/image_r3"
 if not os.path.exists(output_folder):
     os.makedirs(output_folder)
