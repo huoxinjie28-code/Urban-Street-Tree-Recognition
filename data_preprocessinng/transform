@@ -1,1 +1,35 @@
+import numpy as np
+from PIL import Image
+import py360convert
+import os
+import cv2
+import os
+from PIL import Image
+import numpy as np
+import py360convert
+from concurrent.futures import ThreadPoolExecutor
+def process_image(filename):
+    north_angle = int(filename.split('_')[-2][1:])
+    e_img = np.array(Image.open(os.path.join(input_dir, filename)))
+    fov_deg = (90, 90)
+    v_deg = 0
+    out_hw = (512, 512)
+
+    for i, u_deg in enumerate([0, 90, 180, 270]):
+        adjusted_u_deg = (u_deg - north_angle) % 360 - 180
+        p_img = py360convert.e2p(e_img, fov_deg, adjusted_u_deg, v_deg, out_hw, mode='bilinear')
+        Image.fromarray(p_img).save(os.path.join(output_dir, f'{os.path.splitext(filename)[0]}_{u_deg}.jpg'))
+
+input_dir = 'zhuhai'
+output_dir='zhuhai_single'
+
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
+
+jpg_files = [f for f in os.listdir(input_dir) if f.endswith('.jpg')]
+
+# 使用线程池并发处理
+with ThreadPoolExecutor() as executor:
+    executor.map(process_image, jpg_files)
+
 
