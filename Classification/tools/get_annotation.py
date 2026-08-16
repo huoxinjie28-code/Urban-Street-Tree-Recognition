@@ -4,8 +4,8 @@ sys.path.insert(0,os.getcwd())
 from utils.train_utils import get_info
 
 def main():
-    classes_path    = 'D:\\Awesome-Backbones\\datas\\annotations.txt'
-    datasets_path   = 'D:\\Awesome-Backbones\\datasets'
+    classes_path    = './datas\\annotations.txt'
+    datasets_path   = './datasets'
     datasets        = ["train", "test"]
     classes, indexs = get_info(classes_path)
     
