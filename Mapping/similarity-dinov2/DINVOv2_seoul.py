@@ -1,0 +1,250 @@
+import torch
+import os
+import csv
+from transformers import AutoImageProcessor, AutoModel
+from PIL import Image
+import torch.nn as nn
+from geographiclib.geodesic import Geodesic
+from sklearn.cluster import DBSCAN
+import numpy as np
+from multiprocessing import Pool, cpu_count
+from functools import partial
+
+def extract_info(info):
+    clean = info.split('_')
+    lat, lng = float(clean[0].split(',')[0]), float(clean[0].split(',')[1])
+    return lat, lng
+
+# 聚类公式
+def haversine_distance(point1, point2):
+    a = 2
+    lat1 = float(point1[0])
+    lat2 = float(point2[0])
+    lon1 = float(point1[1])
+    lon2 = float(point2[1])
+    name1 = str(point1[2])
+    name2 = str(point2[2])
+    geodict = Geodesic.WGS84.Inverse(lat1, lon1, lat2, lon2)
+    distance = geodict['s12']
+    image1 = Image.open(name1)
+    image2 = Image.open(name2)
+    if distance <= 2:
+        a = 1
+    elif distance <= 6:
+        sim = calculate_similarity(image1, image2)
+        if sim > 0.85:
+            a = 1
+    return a
+
+# 计算相似度
+def calculate_similarity(image1, image2):
+    # Convert images to grayscale
+    inputs1 = processor(images=image1, return_tensors="pt").to(device)
+    inputs2 = processor(images=image2, return_tensors="pt").to(device)
+    outputs1 = model(**inputs1)
+    image_features1 = outputs1.last_hidden_state
+            # 对特征取平均，以得到单个向量表示
+    image_features1 = image_features1.mean(dim=1)
+    outputs2 = model(**inputs2)
+    image_features2 = outputs2.last_hidden_state
+    image_features2 = image_features2.mean(dim=1)
+            # 计算相似度
+    cos = nn.CosineSimilarity(dim=0)
+    sim = cos(image_features1[0],image_features2[0]).item()
+            # 将相似度值调整到[0,1]范围内
+    sim = (sim+1)/2
+    return sim
+
+# 自定义核心点检测函数
+def custom_core_samples_process(X, relation_function, min_samples, i):
+    single_core_samples = []
+    for j in range(i + 1, X.shape[0]):
+        if relation_function(X[i], X[j]) == 1:
+            single_core_samples.append(j)
+    return single_core_samples
+
+def custom_core_samples(X, relation_function, min_samples):
+    core_samples = []
+    n_samples = X.shape[0]
+
+    with Pool(processes=18) as pool: 
+        results = pool.map(partial(custom_core_samples_process, X, relation_function, min_samples), range(n_samples))
+
+    for i, res in enumerate(results):
+        for j in res:
+            core_samples.append((i, j))
+    
+    pool.close()
+    pool.join()
+
+    return core_samples
+
+def find_similar_images(file_name):
+    with torch.no_grad():
+        sign = []
+        for i, image1_path in enumerate(file_name):
+            if i not in sign:
+                t = 0
+                image1 = Image.open(image1_path)
+                for j, image2_path in enumerate(file_name):
+                    if (j != i) & (j not in sign):
+                        image2 = Image.open(image2_path)
+                        similarity = calculate_similarity(image1, image2)
+                        if similarity >= 0.85:
+                            t = 1
+                            sign.append(j)
+                if t == 1:
+                    sign.append(i)
+    return sign
+
+def change_name(name, image_path):
+    if os.path.exists(name) == 0:
+        x0 = name.split('{')[1].split('}')[0]
+        for file in os.listdir(image_path):
+            if name.split('{')[0] == file.split('{')[0]:
+                x1 = file.split('{')[1].split('}')[0]
+                if abs(float(x1) - float(x0)) < 1:
+                    name = dataset_folder + '/' + file
+                    break
+    return name
+
+#找到簇中最多的类
+def spesies_max(species):
+    name = []
+    for specie in species:
+        name.append(specie)
+    counts = {}
+    for word in name:
+        if word in counts:
+            counts[word] = counts[word] + 1
+        else:
+            counts[word] = 1
+    max = 0
+    for i in counts:
+        if counts[i] > max:
+            s = i
+            max = counts[i]
+    
+    return s
+
+def flatten_nested_list(nested_list):
+    flattened_list = []
+    for item in nested_list:
+        if isinstance(item, list):
+            flattened_list.extend(flatten_nested_list(item))
+        else:
+            flattened_list.append(item)
+    return flattened_list
+
+# 设置相似度模型环境
+dataset_folder = "F:/treepaper/seouladd/add1_crop"  # 单木图片路径
+device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
+processor = AutoImageProcessor.from_pretrained('D:/dinov2-base', local_files_only=True)
+model = AutoModel.from_pretrained('D:/dinov2-base', local_files_only=True).to(device)
+# 读入点位信息
+with open('F:/treepaper/point_names.txt', 'r') as file:    # ray.py输出的point_names
+    lines = file.readlines()
+    tree_coordinates_all = []
+    confidence_all = []
+    dis_all = []
+    lat = []
+    lng = []
+    for info in lines:
+        parts = info.split("\t")
+        if parts[0] != '\n':
+            name = parts[4].replace('\n', '')
+            name = change_name(name, dataset_folder)
+            tree_coordinates_all.append([float(parts[1]), float(parts[0]), name]) # 预测点
+            confidence_all.append(float(parts[3]))
+            dis_all.append(float(parts[2]))
+            lng.append(float(parts[0])) # 预测点
+            lat.append(float(parts[1]))
+
+# 读入种类信息
+species_all = []
+with open('F:/treepaper/species.txt', 'r') as file:  # 输出的种类文件
+    lines = file.readlines()
+    for line in lines:
+        if line != '\n':
+            species_all.append(line.split('\t')[0])
+
+result = []
+####################
+with open('F:/treepaper/point/index.txt', 'r') as file:  # fenge.py输出的索引文件
+    lines = file.readlines()
+for n in range(len(lines)):
+    print(str(n)+'/'+str(len(lines)))
+    ind = lines[n].replace('[', '').replace(']', '').split(',')
+    tree_coordinates = []
+    confidence = []
+    dis = []
+    species = []
+    j = 4
+    while j < len(ind):
+        k = int(ind[j])
+        tree_coordinates.append(tree_coordinates_all[k])
+        confidence.append(confidence_all[k])
+        dis.append(dis_all[k])
+        species.append(species_all[k])
+        j = j + 1
+
+    if __name__ == '__main__':      
+        data = np.array(tree_coordinates)
+
+        # 使用自定义核心点检测函数
+        core_samples_indices = custom_core_samples(data, haversine_distance, min_samples=1)
+
+        # 初始化聚类器
+        dbscan_labels = np.zeros(data.shape[0], dtype=int) - 1  # 初始化所有点为噪声点 (-1)
+
+        # 根据核心点和邻域点进行聚类
+        cluster_label = 0
+        for i, j in core_samples_indices:
+            if dbscan_labels[i] == -1 and dbscan_labels[j] == -1:  # 如果两个点都是噪声点
+                dbscan_labels[i] = cluster_label
+                dbscan_labels[j] = cluster_label
+                cluster_label += 1
+            elif dbscan_labels[i] != -1 and dbscan_labels[j] == -1:  # 如果其中一个点已经有簇标签
+                dbscan_labels[j] = dbscan_labels[i]
+            elif dbscan_labels[i] == -1 and dbscan_labels[j] != -1:
+                dbscan_labels[i] = dbscan_labels[j]
+
+        # 创建一个字典来存储每个簇的树木索引
+        tree_clusters = {}
+        for i, cluster_label in enumerate(dbscan_labels):
+            if cluster_label in tree_clusters:
+                tree_clusters[cluster_label].append(i)
+            else:
+                tree_clusters[cluster_label] = [i]
+
+        # 加权
+        a = 1 # 距离加权的参数
+        k = []
+        for cluster_label, tree_indices in tree_clusters.items():
+            if len(tree_indices) > 1:
+                file_name = []
+                w = 0
+                x = 0
+                y = 0
+                index_id = []
+                for index, id in enumerate(tree_indices):
+                    index_id.append(species[id])
+                    w = w + np.exp(-dis[id]/10) + a * confidence[id]
+                    x = x + tree_coordinates[id][0] * (np.exp(-dis[id]/10) + a * confidence[id])
+                    y = y + tree_coordinates[id][1] * (np.exp(-dis[id]/10) + a * confidence[id])
+                    k.append(id)
+                if w != 0:
+                    x = x/w
+                    y = y/w
+                    if float(ind[0]) < x < float(ind[1]):
+                        if float(ind[2]) < y < float(ind[3]):
+                            result.append([[x, y], w/len(index_id), spesies_max(index_id)])
+        for i in range(len(tree_coordinates)):
+            if i not in k:
+                result.append([tree_coordinates[tree_coordinates[i]], a * confidence[tree_coordinates[i]] + np.exp(-dis[tree_coordinates[i]]/10), species[tree_coordinates[i]]])
+
+
+with open('F:/treepaper/point/result.txt', 'w') as file: 
+    for item in result:
+        file.write(str(item[0][0]) + '\t' + str(item[0][1]) + '\t' + str(item[1]) + '\t' + str(item[2]) + '\n')
+
