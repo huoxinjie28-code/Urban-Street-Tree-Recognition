@@ -1,1 +1,4 @@
-
+Banyan 0
+Chittagong-chickrassy 1
+Palm 2
+Others 3
