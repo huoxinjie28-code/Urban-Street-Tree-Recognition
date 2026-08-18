@@ -1,0 +1,4 @@
+Ginkgo-biloba 0
+Platanus 1
+Zelkova-Serrate 2
+Others 3
