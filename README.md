@@ -16,7 +16,7 @@ The data used in this study is multi-sourced and structured as follows:
 ### 2. Annotations
 - **Annotation Files**: The annotations/ directory contains YOLOv11-compatible annotation files (*.txt) with bounding box labels for trees in normalized coordinates format.
 ### 3. Pre-trained Models
-- **Location**: `models/` directory.
+- **Location**: `Detection` directory.
 - **Contents**:
   ​​Per-City Models​​: Fine-tuned model weights for each target city, stored in their respective directories (e.g., NewYork-yolov11/, Seoul-yolov11/, Zhuhai-yolov11/).
 ​​  Base Models​​: Foundational pre-trained weights for YOLO architectures (yolov8n.pt, yolo11n.pt).
@@ -25,7 +25,18 @@ The data used in this study is multi-sourced and structured as follows:
 - ​​Scripts​​:
   train-tree.py: Script for initiating model training.
   test-tree-crop.py: Script for performing inference and cropping detected tree instances from images.
-### 5.classification
--- ** tool: 
+### 5.Classification
+Purpose: Assign a species-level or label​ to each individually detected tree instance.
+Input:
+Cropped tree images produced by Detection/test-tree-crop.py.
+Tool:
+Classification/ directory:
+train.py: Script for training a classification model on cropped tree images.
+predict_class.py: Script for inferring species / functional group from cropped trees.
+class_utils.py: Utilities for image preprocessing, label encoding, and result aggregation.
+Workflow:
+Run Detection/test-tree-crop.py to extract individual tree patches from street-view images.
+Feed cropped images into the classification model.
+Output a structured prediction file linking each tree instance to its predicted class.
 ### 6.mapping: 
 
