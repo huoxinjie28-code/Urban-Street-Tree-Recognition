@@ -25,3 +25,7 @@ The data used in this study is multi-sourced and structured as follows:
 - ​​Scripts​​:
   train-tree.py: Script for initiating model training.
   test-tree-crop.py: Script for performing inference and cropping detected tree instances from images.
+### 5.classification
+-- ** tool: 
+### 6.mapping: 
+
