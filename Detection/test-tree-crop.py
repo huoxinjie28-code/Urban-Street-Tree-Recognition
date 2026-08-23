@@ -3,13 +3,13 @@ import os
 import cv2
 import json
 model = YOLO("runs/detect/train12/weights/best.pt")
-input_folder = "streeview_four_r3"
-output_folder = "03_11_whx/csv_r3"
+input_folder = ""
+output_folder = ""
 
-cropped_folder = "image_r3"
+cropped_folder = ""
 if not os.path.exists(output_folder):
     os.makedirs(output_folder)
-results_file = os.path.join(output_folder, "r3_results.txt")
+results_file = os.path.join(output_folder, "results.txt")
 with open(results_file, "w") as f:
     for filename in os.listdir(input_folder):
         if filename.endswith(('.jpg', '.jpeg', '.png')):
